@@ -1,3 +1,8 @@
+#ifndef CHIP8_H
+#define CHIP8_H
+
+#include <SDL2/SDL.h>
+
 class Chip8
 {
 public:
@@ -15,11 +20,16 @@ public:
     // Emulate one cycle of the system
     void emulateCycle();
 
-    // Get the current state of the display
-    unsigned char *getGfx();
-
     // Set the state of the keypad
     void setKey(int key, int value);
+
+    bool drawFlag = false;
+
+    void drawGraphics();
+
+    void handleEvents(bool &running);
+
+    void cleanUp();
 
 private:
     // Private member variables
@@ -71,4 +81,10 @@ private:
             0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
             0xF0, 0x80, 0xF0, 0x80, 0x80  // F
     };
+
+    SDL_Window *window;
+    SDL_Renderer *renderer;
+    SDL_Texture *texture;
 };
+
+#endif // CHIP8_H
