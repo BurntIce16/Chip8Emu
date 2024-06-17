@@ -1,6 +1,6 @@
 CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++11
-LDFLAGS = -lSDL2
+CXXFLAGS = -Wall -Wextra -std=c++11 -I/usr/include/SDL2
+LDFLAGS = -lSDL2 -lSDL2_ttf
 
 TARGET = chip8
 SOURCES = main.cpp chip8.cpp

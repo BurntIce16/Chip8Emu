@@ -22,13 +22,6 @@ void runAtFrequency(unsigned int hz)
         chip8.drawFlag = false;
     }
 
-    // set the keys
-    // 1,2,3,4
-    // Q,W,E,R
-    // A,S,D,F
-    // Z,X,C,V
-    // chip8.setKey();
-
     // Clock logic
     auto now = steady_clock::now();
     if (now > next)
@@ -50,22 +43,34 @@ int main(int argc, char *argv[])
         std::cout << "Correct use is ./chip8 <gamePath>" << std::endl;
         return 0;
     }
-    else
+
+    unsigned int frequency = 60; // 60 Hz is default, may change for testing
+
+    while (true)
     {
         chip8.initialize();
-        chip8.loadGame(argv[1]);
+        if (!chip8.loadGame(argv[1]))
+        {
+            std::cerr << "Failed to load game!" << std::endl;
+            return 1;
+        }
+
+        bool running = true;
+        bool restart = false;
+
+        while (running)
+        {
+            chip8.handleEvents(running, restart);
+            runAtFrequency(frequency);
+        }
+
+        chip8.cleanUp();
+
+        if (!restart)
+        {
+            break; // Exit the loop if not restarting
+        }
     }
-
-    unsigned int frequency = 60; // 60 Hz
-    bool running = true;
-
-    while (running)
-    {
-        chip8.handleEvents(running);
-        runAtFrequency(frequency);
-    }
-
-    chip8.cleanUp();
 
     return 0;
 }

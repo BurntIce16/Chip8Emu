@@ -4,6 +4,8 @@
 #include <iostream>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
+#include <ctime>
 
 Chip8::Chip8()
 {
@@ -39,6 +41,29 @@ void Chip8::initialize()
     delay_timer = 0;
     sound_timer = 0;
 
+    // DEBUG WINDOW SETUP
+
+    // Initialize SDL_ttf
+    if (TTF_Init() != 0)
+    {
+        std::cerr << "TTF_Init Error: " << TTF_GetError() << std::endl;
+        SDL_Quit();
+        exit(1);
+    }
+
+    // Load a font
+    font = TTF_OpenFont("KodeMono-VariableFont_wght.ttf", 16); // Adjust path and size as needed
+    if (font == nullptr)
+    {
+        std::cerr << "TTF_OpenFont Error: " << TTF_GetError() << std::endl;
+        TTF_Quit();
+        SDL_Quit();
+        exit(1);
+    }
+
+    // create the debug window
+    initializeDebugWindow();
+
     // create the window for graphics using sdl, this will be used by the drawGraphics function
 
     // Initialize SDL
@@ -66,6 +91,37 @@ void Chip8::initialize()
         SDL_Quit();
         exit(1);
     }
+
+    enableLogging();
+
+    if (loggingEnabled)
+    {
+        std::string filename = "log.txt";
+        // open the file
+        logFile.open(filename);
+    }
+}
+
+void Chip8::initializeDebugWindow()
+{
+    // Create a window for debugging
+    debugWindow = SDL_CreateWindow("CHIP-8 Debugger", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, SDL_WINDOW_SHOWN);
+    if (debugWindow == nullptr)
+    {
+        std::cerr << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
+        SDL_Quit();
+        exit(1);
+    }
+
+    // Create a renderer for the debug window
+    debugRenderer = SDL_CreateRenderer(debugWindow, -1, SDL_RENDERER_ACCELERATED);
+    if (debugRenderer == nullptr)
+    {
+        std::cerr << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
+        SDL_DestroyWindow(debugWindow);
+        SDL_Quit();
+        exit(1);
+    }
 }
 
 // Load the game into the memory
@@ -83,6 +139,7 @@ bool Chip8::loadGame(const char *filename)
     // Get the file size
     fseek(file, 0, SEEK_END);
     long bufferSize = ftell(file);
+    Chip8::bufferSize = bufferSize;
     fseek(file, 0, SEEK_SET);
 
     // Allocate buffer to hold the file contents
@@ -124,6 +181,11 @@ void Chip8::emulateCycle()
 
     printf("Executing opcode: 0x%X at PC: %X\n", opcode, pc);
 
+    if (loggingEnabled)
+    {
+        logFile << "Executing opcode: 0x" << std::hex << opcode << " at PC: 0x" << pc << std::endl;
+    }
+
     // Decode & Execute Opcode
     switch (opcode & 0xF000) // only need 12 bits so mask the rest
     {
@@ -138,9 +200,9 @@ void Chip8::emulateCycle()
             break;
         case 0x00EE:
             // Return from subroutine
-            std::cout << "Return from subroutine" << std::endl;
-            pc = stack[sp];
             sp--;
+            pc = stack[sp];
+            pc += 2;
             break;
         default:
             // std::cout << "Call machine code routine (not needed on most machines)" << std::endl;
@@ -221,7 +283,7 @@ void Chip8::emulateCycle()
             V[(opcode & 0x0F00) >> 8] = (V[(opcode & 0x0F00) >> 8] ^ V[(opcode & 0x00F0) >> 4]);
             pc += 2;
             break;
-        case 0x8004: // 8XY4: Add VY to VX, set VF to 1 if there's a carry, otherwise 0
+        case 0x0004: // 8XY4: Add VY to VX, set VF to 1 if there's a carry, otherwise 0
         {
             uint8_t x = (opcode & 0x0F00) >> 8; // Extract the X register index
             uint8_t y = (opcode & 0x00F0) >> 4; // Extract the Y register index
@@ -238,7 +300,7 @@ void Chip8::emulateCycle()
             pc += 2;      // Increment the program counter by 2
             break;
         }
-        case 0x8005: // 8XY5: Vx = Vx - Vy, set VF to 0 if there's a borrow, 1 if there isn't
+        case 0x0005: // 8XY5: Vx = Vx - Vy, set VF to 0 if there's a borrow, 1 if there isn't
         {
             uint8_t x = (opcode & 0x0F00) >> 8;
             uint8_t y = (opcode & 0x00F0) >> 4;
@@ -254,7 +316,7 @@ void Chip8::emulateCycle()
             pc += 2;
             break;
         }
-        case 0x8006: // 8XY6: Store the least significant bit of Vx in Vf and shift Vx to the right by 1
+        case 0x0006: // 8XY6: Store the least significant bit of Vx in Vf and shift Vx to the right by 1
         {
             uint8_t x = (opcode & 0x0F00) >> 8;
             V[0xF] = V[x] & 0x1; // Store the least significant bit in Vf
@@ -262,7 +324,7 @@ void Chip8::emulateCycle()
             pc += 2;
             break;
         }
-        case 0x8007: // 8XY7: Vx = Vy - Vx, set VF to 0 if there's a borrow, 1 if there isn't
+        case 0x0007: // 8XY7: Vx = Vy - Vx, set VF to 0 if there's a borrow, 1 if there isn't
         {
             uint8_t x = (opcode & 0x0F00) >> 8;
             uint8_t y = (opcode & 0x00F0) >> 4;
@@ -278,7 +340,7 @@ void Chip8::emulateCycle()
             pc += 2;
             break;
         }
-        case 0x800E: // 8XYE: Store the most significant bit of Vx in Vf and shift Vx to the left by 1
+        case 0x000E: // 8XYE: Store the most significant bit of Vx in Vf and shift Vx to the left by 1
         {
             uint8_t x = (opcode & 0x0F00) >> 8;
             V[0xF] = (V[x] & 0x80) >> 7; // Store the most significant bit in Vf
@@ -286,14 +348,81 @@ void Chip8::emulateCycle()
             pc += 2;
             break;
         }
+        default:
+            printf("Unknown opcode: 0x%X at PC: %d\n", opcode, pc);
+            break;
+        }
         break;
-        case 0x9000: // 9XY0: Skip the next instruction if Vx does not equal Vy
+    case 0x9000: // 9XY0: Skip the next instruction if Vx does not equal Vy
+    {
+        uint8_t x = (opcode & 0x0F00) >> 8;
+        uint8_t y = (opcode & 0x00F0) >> 4;
+        if (V[x] != V[y])
+        {
+            pc += 4;
+        }
+        else
+        {
+            pc += 2;
+        }
+        break;
+    }
+    case 0xA000: // ANNN: Set I to the address NNN
+    {
+        I = opcode & 0x0FFF;
+        pc += 2;
+        break;
+    }
+    case 0xB000: // BNNN: Jump to the address NNN plus V0
+    {
+        pc = (opcode & 0x0FFF) + V[0];
+        break;
+    }
+    case 0xC000: // CXNN: Set Vx to the result of a bitwise and operation on a random number (typically 0 to 255) and NN
+    {
+        uint8_t x = (opcode & 0x0F00) >> 8;
+        uint8_t nn = opcode & 0x00FF;
+        V[x] = (rand() % 256) & nn;
+        pc += 2;
+        break;
+    }
+    case 0xD000: //	Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels
+    {            // 0xDXYN
+        unsigned short x = V[(opcode & 0x0F00) >> 8];
+        unsigned short y = V[(opcode & 0x00F0) >> 4];
+        unsigned short n = opcode & 0x000F;
+        unsigned short pixel;
+
+        V[0xF] = 0; // reset Vf register
+
+        for (int ycount = 0; ycount < n; ycount++)
+        {
+            pixel = memory[I + ycount];
+            for (int xcount = 0; xcount < 8; xcount++)
+            {
+                if ((pixel & (0x80 >> xcount)) != 0)
+                {
+                    if (gfx[(x + xcount + ((y + ycount) * 64))] == 1)
+                    {
+                        V[0xF] = 1; // set flag to true
+                    }
+                    gfx[x + xcount + ((y + ycount) * 64)] ^= 1;
+                }
+            }
+        }
+        drawFlag = true;
+        pc += 2;
+        break;
+    }
+    case 0xE000:
+        switch (opcode & 0x00FF)
+        {
+        case 0x009E: // EX9E: Skip the next instruction if the key stored in VX is pressed
         {
             uint8_t x = (opcode & 0x0F00) >> 8;
-            uint8_t y = (opcode & 0x00F0) >> 4;
-            if (V[x] != V[y])
+            if (key[V[x]] != 0)
             {
-                pc += 4;
+                pc += 4; // Skip the next instruction
             }
             else
             {
@@ -301,203 +430,137 @@ void Chip8::emulateCycle()
             }
             break;
         }
-        case 0xA000: // ANNN: Set I to the address NNN
-        {
-            I = opcode & 0x0FFF;
-            pc += 2;
-            break;
-        }
-        case 0xB000: // BNNN: Jump to the address NNN plus V0
-        {
-            pc = (opcode & 0x0FFF) + V[0];
-            break;
-        }
-        case 0xC000: // CXNN: Set Vx to the result of a bitwise and operation on a random number (typically 0 to 255) and NN
+        case 0x00A1: // EXA1: Skip the next instruction if the key stored in VX is not pressed
         {
             uint8_t x = (opcode & 0x0F00) >> 8;
-            uint8_t nn = opcode & 0x00FF;
-            V[x] = (rand() % 256) & nn;
+            if (key[V[x]] == 0)
+            {
+                pc += 4; // Skip the next instruction
+            }
+            else
+            {
+                pc += 2;
+            }
+            break;
+        }
+        }
+        break;
+    case 0xF000:
+        switch (opcode & 0x00FF)
+        {
+        case 0x0007: // FX07: Set VX to the value of the delay timer
+        {
+            uint8_t x = (opcode & 0x0F00) >> 8;
+            V[x] = delay_timer;
             pc += 2;
             break;
         }
-        case 0xD000: //	Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels
-        {            // 0xDXYN
-            unsigned short x = V[(opcode & 0x0F00) >> 8];
-            unsigned short y = V[(opcode & 0x00F0) >> 4];
-            unsigned short n = opcode & 0x000F;
-            unsigned short pixel;
+        case 0x000A: // FX0A: A key press is awaited, and then stored in VX
+        {
+            uint8_t x = (opcode & 0x0F00) >> 8;
+            bool keyPressDetected = false;
 
-            V[0xF] = 0; // reset Vf register
-
-            for (int ycount = 0; ycount < n; ycount++)
+            for (uint8_t i = 0; i < 16; ++i)
             {
-                pixel = memory[I + ycount];
-                for (int xcount = 0; xcount < 8; xcount++)
+                if (key[i] != 0)
                 {
-                    if ((pixel & (0x80 >> xcount)) != 0)
-                    {
-                        if (gfx[(x + xcount + ((y + ycount) * 64))] == 1)
-                        {
-                            V[0xF] = 1; // set flag to true
-                        }
-                        gfx[x + xcount + ((y + ycount) * 64)] ^= 1;
-                    }
+                    V[x] = i;
+                    keyPressDetected = true;
+                    break;
                 }
             }
-            drawFlag = true;
+
+            if (!keyPressDetected)
+            {
+                return; // Don't increment pc, wait for key press
+            }
+
             pc += 2;
             break;
         }
-        case 0xE000:
-            switch (opcode & 0x00FF)
-            {
-            case 0x009E: // EX9E: Skip the next instruction if the key stored in VX is pressed
-            {
-                uint8_t x = (opcode & 0x0F00) >> 8;
-                if (key[V[x]] != 0)
-                {
-                    pc += 4; // Skip the next instruction
-                }
-                else
-                {
-                    pc += 2;
-                }
-                break;
-            }
-            case 0x00A1: // EXA1: Skip the next instruction if the key stored in VX is not pressed
-            {
-                uint8_t x = (opcode & 0x0F00) >> 8;
-                if (key[V[x]] == 0)
-                {
-                    pc += 4; // Skip the next instruction
-                }
-                else
-                {
-                    pc += 2;
-                }
-                break;
-            }
-            default:
-                printf("Unknown opcode: 0x%X at PC: %d\n", opcode, pc);
-                break;
-            }
-            break;
-        case 0xF000:
-            switch (opcode & 0x00FF)
-            {
-            case 0x0007: // FX07: Set VX to the value of the delay timer
-            {
-                uint8_t x = (opcode & 0x0F00) >> 8;
-                V[x] = delay_timer;
-                pc += 2;
-                break;
-            }
-            case 0x000A: // FX0A: A key press is awaited, and then stored in VX
-            {
-                uint8_t x = (opcode & 0x0F00) >> 8;
-                bool keyPressDetected = false;
-
-                for (uint8_t i = 0; i < 16; ++i)
-                {
-                    if (key[i] != 0)
-                    {
-                        V[x] = i;
-                        keyPressDetected = true;
-                        break;
-                    }
-                }
-
-                if (!keyPressDetected)
-                {
-                    return; // Don't increment pc, wait for key press
-                }
-
-                pc += 2;
-                break;
-            }
-            case 0x0015: // FX15: Set the delay timer to VX
-            {
-                uint8_t x = (opcode & 0x0F00) >> 8;
-                delay_timer = V[x];
-                pc += 2;
-                break;
-            }
-            case 0x0018: // FX18: Set the sound timer to VX
-            {
-                uint8_t x = (opcode & 0x0F00) >> 8;
-                sound_timer = V[x];
-                pc += 2;
-                break;
-            }
-            case 0x001E: // FX1E: Adds VX to I
-            {
-                uint8_t x = (opcode & 0x0F00) >> 8;
-                I += V[x];
-                pc += 2;
-                break;
-            }
-            case 0x0029: // FX29: Set I to the location of the sprite for the character in VX
-            {
-                uint8_t x = (opcode & 0x0F00) >> 8;
-                I = V[x] * 5; // Each character is 5 bytes long
-                pc += 2;
-                break;
-            }
-            case 0x0033: // FX33: Store the binary-coded decimal representation of VX
-            {
-                uint8_t x = (opcode & 0x0F00) >> 8;
-                memory[I] = V[x] / 100;
-                memory[I + 1] = (V[x] / 10) % 10;
-                memory[I + 2] = (V[x] % 100) % 10;
-                pc += 2;
-                break;
-            }
-            case 0x0055: // FX55: Store registers V0 through VX in memory starting at location I
-            {
-                uint8_t x = (opcode & 0x0F00) >> 8;
-                for (uint8_t i = 0; i <= x; ++i)
-                {
-                    memory[I + i] = V[i];
-                }
-                // I += x + 1; // On the original interpreter, I is incremented by x + 1 after this operation.
-                pc += 2;
-                break;
-            }
-            case 0x0065: // FX65: Read registers V0 through VX from memory starting at location I
-            {
-                uint8_t x = (opcode & 0x0F00) >> 8;
-                for (uint8_t i = 0; i <= x; ++i)
-                {
-                    V[i] = memory[I + i];
-                }
-                // I += x + 1; // On the original interpreter, I is incremented by x + 1 after this operation.
-                pc += 2;
-                break;
-            }
-            default:
-                printf("Unknown opcode: 0x%X\n", opcode);
-            }
-            break;
-
-        default:
-            printf("Unknown opcode: 0x%X at PC: %d\n", opcode, pc);
-        }
-
-        // Update timers
-        if (delay_timer > 0)
+        case 0x0015: // FX15: Set the delay timer to VX
         {
-            --delay_timer;
+            uint8_t x = (opcode & 0x0F00) >> 8;
+            delay_timer = V[x];
+            pc += 2;
+            break;
         }
-
-        if (sound_timer > 0)
+        case 0x0018: // FX18: Set the sound timer to VX
         {
-            if (sound_timer == 1)
-            {
-                printf("Beep!\n");
-            }
-            --sound_timer;
+            uint8_t x = (opcode & 0x0F00) >> 8;
+            sound_timer = V[x];
+            pc += 2;
+            break;
         }
+        case 0x001E: // FX1E: Adds VX to I
+        {
+            uint8_t x = (opcode & 0x0F00) >> 8;
+            I += V[x];
+            pc += 2;
+            break;
+        }
+        case 0x0029: // FX29: Set I to the location of the sprite for the character in VX
+        {
+            uint8_t x = (opcode & 0x0F00) >> 8;
+            I = V[x] * 5; // Each character is 5 bytes long
+            pc += 2;
+            break;
+        }
+        case 0x0033: // FX33: Store the binary-coded decimal representation of VX
+        {
+            uint8_t x = (opcode & 0x0F00) >> 8;
+            memory[I] = V[x] / 100;
+            memory[I + 1] = (V[x] / 10) % 10;
+            memory[I + 2] = (V[x] % 100) % 10;
+            pc += 2;
+            break;
+        }
+        case 0x0055: // FX55: Store registers V0 through VX in memory starting at location I
+        {
+            uint8_t x = (opcode & 0x0F00) >> 8;
+            for (uint8_t i = 0; i <= x; ++i)
+            {
+                memory[I + i] = V[i];
+            }
+            // I += x + 1; // On the original interpreter, I is incremented by x + 1 after this operation.
+            pc += 2;
+            break;
+        }
+        case 0x0065: // FX65: Read registers V0 through VX from memory starting at location I
+        {
+            uint8_t x = (opcode & 0x0F00) >> 8;
+            for (uint8_t i = 0; i <= x; ++i)
+            {
+                V[i] = memory[I + i];
+            }
+            // I += x + 1; // On the original interpreter, I is incremented by x + 1 after this operation.
+            pc += 2;
+            break;
+        }
+        }
+        break;
+
+    default:
+        printf("Unknown opcode: 0x%X at PC: %d\n", opcode, pc);
     }
+
+    // Update timers
+    if (delay_timer > 0)
+    {
+        --delay_timer;
+    }
+
+    if (sound_timer > 0)
+    {
+        if (sound_timer == 1)
+        {
+            printf("Beep!\n");
+        }
+        --sound_timer;
+    }
+
+    // update debug window
+    renderDebugInfo();
 }
 
 // Set the state of the keypad
@@ -523,6 +586,7 @@ void Chip8::drawGraphics()
         {
             if (gfx[y * 64 + x] != 0)
             {
+                // std::cout << "Drawing pixel at: " << x << ", " << y << std::endl;
                 SDL_Rect rect;
                 rect.x = x * 10; // Scale by 10 for visibility
                 rect.y = y * 10; // Scale by 10 for visibility
@@ -537,7 +601,7 @@ void Chip8::drawGraphics()
     SDL_RenderPresent(renderer);
 }
 
-void Chip8::handleEvents(bool &running)
+void Chip8::handleEvents(bool &running, bool &restart)
 {
     SDL_Event event;
     while (SDL_PollEvent(&event))
@@ -546,6 +610,20 @@ void Chip8::handleEvents(bool &running)
         {
             running = false;
             std::cout << "Quit" << std::endl;
+            if (loggingEnabled)
+            {
+                logFile.close();
+            }
+        }
+        else if (event.type == SDL_KEYDOWN)
+        {
+            if (event.key.keysym.sym == SDLK_ESCAPE)
+            {
+                restart = true;
+                running = false;
+                std::cout << "Restart" << std::endl;
+            }
+            // Handle other key presses if needed
         }
         // Add more event handling here if needed, e.g., keypresses
     }
@@ -556,5 +634,164 @@ void Chip8::cleanUp()
     // Cleanup and exit
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    SDL_DestroyRenderer(debugRenderer);
+    SDL_DestroyWindow(debugWindow);
     SDL_Quit();
+}
+
+void Chip8::renderDebugInfo()
+{
+    static bool staticContentRendered = false;
+    static SDL_Texture *staticContentTexture = nullptr;
+
+    // If static content is not rendered yet, render it to a texture
+    if (!staticContentRendered)
+    {
+        staticContentTexture = SDL_CreateTexture(debugRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 800, 600);
+        SDL_SetRenderTarget(debugRenderer, staticContentTexture);
+
+        // Clear the texture
+        SDL_SetRenderDrawColor(debugRenderer, 0, 0, 0, 255); // Black
+        SDL_RenderClear(debugRenderer);
+
+        SDL_Color white = {255, 255, 255, 255}; // White color for normal text
+
+        // Display the registers
+        for (int i = 0; i < 16; ++i)
+        {
+            char buffer[16];
+            snprintf(buffer, sizeof(buffer), "V[%X]: %02X", i, V[i]);
+            renderText(debugRenderer, 10, 20 * i, buffer, white);
+        }
+
+        // Display other registers and state information
+        char buffer[32];
+        snprintf(buffer, sizeof(buffer), "I: %04X", I);
+        renderText(debugRenderer, 10, 20 * 16, buffer, white);
+
+        snprintf(buffer, sizeof(buffer), "PC: %04X", pc);
+        renderText(debugRenderer, 10, 20 * 17, buffer, white);
+
+        snprintf(buffer, sizeof(buffer), "SP: %02X", sp);
+        renderText(debugRenderer, 10, 20 * 18, buffer, white);
+
+        snprintf(buffer, sizeof(buffer), "Delay Timer: %02X", delay_timer);
+        renderText(debugRenderer, 10, 20 * 19, buffer, white);
+
+        snprintf(buffer, sizeof(buffer), "Sound Timer: %02X", sound_timer);
+        renderText(debugRenderer, 10, 20 * 20, buffer, white);
+
+        // Display loaded instructions in memory
+        int x = 200;
+        int y = 10;
+        const int padding = 10;
+        const int windowWidth = 800; // Assuming debug window width is 800
+
+        for (int i = 0x200; i < (0x200 + Chip8::bufferSize); i += 2)
+        {
+            uint16_t address = i;
+            char buffer[32];
+            snprintf(buffer, sizeof(buffer), "%04X: %02X%02X", address, memory[address], memory[address + 1]);
+
+            renderText(debugRenderer, x, y, buffer, white);
+
+            int textWidth;
+            TTF_SizeText(font, buffer, &textWidth, nullptr);
+
+            x += textWidth + padding;
+            if (x + textWidth > windowWidth - padding)
+            {
+                x = 200; // Reset x position
+                y += 20; // Move to next line
+            }
+        }
+
+        // Reset the render target to the default
+        SDL_SetRenderTarget(debugRenderer, nullptr);
+        staticContentRendered = true;
+    }
+
+    // Clear the debug window
+    SDL_SetRenderDrawColor(debugRenderer, 0, 0, 0, 255); // Black
+    SDL_RenderClear(debugRenderer);
+
+    // Render the static content texture
+    SDL_RenderCopy(debugRenderer, staticContentTexture, nullptr, nullptr);
+
+    // Highlight the current instruction
+    int x = 200;
+    int y = 10;
+    const int padding = 10;
+    const int windowWidth = 800; // Assuming debug window width is 800
+
+    for (int i = 0x200; i < (0x200 + Chip8::bufferSize); i += 2)
+    {
+        uint16_t address = i;
+        char buffer[32];
+        snprintf(buffer, sizeof(buffer), "%04X: %02X%02X", address, memory[address], memory[address + 1]);
+
+        if (address == pc)
+        {
+            SDL_Color highlight = {255, 0, 0, 255}; // Red color for highlighting the current instruction
+            renderText(debugRenderer, x, y, buffer, highlight);
+            break;
+        }
+
+        int textWidth;
+        TTF_SizeText(font, buffer, &textWidth, nullptr);
+
+        x += textWidth + padding;
+        if (x + textWidth > windowWidth - padding)
+        {
+            x = 200; // Reset x position
+            y += 20; // Move to next line
+        }
+    }
+
+    // Present the debug information on the screen
+    SDL_RenderPresent(debugRenderer);
+}
+
+void Chip8::renderText(SDL_Renderer *renderer, int x, int y, const char *text, SDL_Color color)
+{
+    // Create surface from text
+    SDL_Surface *surfaceMessage = TTF_RenderText_Solid(font, text, color);
+    if (surfaceMessage == nullptr)
+    {
+        std::cerr << "TTF_RenderText_Solid Error: " << TTF_GetError() << std::endl;
+        return;
+    }
+
+    // Create texture from surface
+    SDL_Texture *message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+    if (message == nullptr)
+    {
+        std::cerr << "SDL_CreateTextureFromSurface Error: " << SDL_GetError() << std::endl;
+        SDL_FreeSurface(surfaceMessage);
+        return;
+    }
+
+    // Get width and height of the texture
+    int text_width = surfaceMessage->w;
+    int text_height = surfaceMessage->h;
+
+    SDL_FreeSurface(surfaceMessage);
+
+    // Define destination rectangle
+    SDL_Rect destRect;
+    destRect.x = x;
+    destRect.y = y;
+    destRect.w = text_width;
+    destRect.h = text_height;
+
+    // Render the text
+    SDL_RenderCopy(renderer, message, nullptr, &destRect);
+
+    // Clean up
+    SDL_DestroyTexture(message);
+}
+
+void Chip8::enableLogging()
+{
+    loggingEnabled = true;
 }

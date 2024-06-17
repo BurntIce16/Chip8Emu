@@ -2,6 +2,8 @@
 #define CHIP8_H
 
 #include <SDL2/SDL.h>
+#include <SDL_ttf.h>
+#include <fstream>
 
 class Chip8
 {
@@ -27,9 +29,16 @@ public:
 
     void drawGraphics();
 
-    void handleEvents(bool &running);
+    void handleEvents(bool &running, bool &restart);
 
     void cleanUp();
+
+    // Debugging functions
+    void initializeDebugWindow();
+    void renderDebugInfo();
+    void renderText(SDL_Renderer *renderer, int x, int y, const char *text, SDL_Color color);
+
+    void enableLogging();
 
 private:
     // Private member variables
@@ -85,6 +94,17 @@ private:
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *texture;
+
+    SDL_Window *debugWindow;
+    SDL_Renderer *debugRenderer;
+    TTF_Font *font; // Font for rendering text
+
+    //log file for debugging (ofstream)
+    std::ofstream logFile;
+    bool loggingEnabled = false;
+
+
+    long bufferSize = 0;
 };
 
 #endif // CHIP8_H
