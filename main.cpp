@@ -60,6 +60,7 @@ int main(int argc, char *argv[])
 
         while (running)
         {
+            chip8.clearKeys();
             chip8.handleEvents(running, restart);
             runAtFrequency(frequency);
         }

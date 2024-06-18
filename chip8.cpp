@@ -197,6 +197,7 @@ void Chip8::emulateCycle()
             std::cout << "Clear the display" << std::endl;
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Black
             SDL_RenderClear(renderer);
+            pc += 2;
             break;
         case 0x00EE:
             // Return from subroutine
@@ -569,6 +570,11 @@ void Chip8::setKey(int key, int value)
     Chip8::key[key] = value;
 }
 
+void Chip8::clearKeys()
+{
+    memset(key, 0, sizeof(key));
+}
+
 void Chip8::drawGraphics()
 {
     // draw the gfx buffer to the screen
@@ -617,13 +623,79 @@ void Chip8::handleEvents(bool &running, bool &restart)
         }
         else if (event.type == SDL_KEYDOWN)
         {
+
+            // This is beyond cursed and needs a better solution
             if (event.key.keysym.sym == SDLK_ESCAPE)
             {
                 restart = true;
                 running = false;
+                //clear any textures
                 std::cout << "Restart" << std::endl;
             }
-            // Handle other key presses if needed
+            else if (event.key.keysym.sym == SDLK_1)
+            {
+                setKey(0, 1);
+            }
+            else if (event.key.keysym.sym == SDLK_2)
+            {
+                setKey(1, 1);
+            }
+            else if (event.key.keysym.sym == SDLK_3)
+            {
+                setKey(2, 1);
+            }
+            else if (event.key.keysym.sym == SDLK_4)
+            {
+                setKey(3, 1);
+            }
+            else if (event.key.keysym.sym == SDLK_q)
+            {
+                setKey(4, 1);
+            }
+            else if (event.key.keysym.sym == SDLK_w)
+            {
+                setKey(5, 1);
+            }
+            else if (event.key.keysym.sym == SDLK_e)
+            {
+                setKey(6, 1);
+            }
+            else if (event.key.keysym.sym == SDLK_r)
+            {
+                setKey(7, 1);
+            }
+            else if (event.key.keysym.sym == SDLK_a)
+            {
+                setKey(8, 1);
+            }
+            else if (event.key.keysym.sym == SDLK_s)
+            {
+                setKey(9, 1);
+            }
+            else if (event.key.keysym.sym == SDLK_d)
+            {
+                setKey(10, 1);
+            }
+            else if (event.key.keysym.sym == SDLK_f)
+            {
+                setKey(11, 1);
+            }
+            else if (event.key.keysym.sym == SDLK_z)
+            {
+                setKey(12, 1);
+            }
+            else if (event.key.keysym.sym == SDLK_x)
+            {
+                setKey(13, 1);
+            }
+            else if (event.key.keysym.sym == SDLK_c)
+            {
+                setKey(14, 1);
+            }
+            else if (event.key.keysym.sym == SDLK_v)
+            {
+                setKey(15, 1);
+            }
         }
         // Add more event handling here if needed, e.g., keypresses
     }

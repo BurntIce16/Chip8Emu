@@ -25,6 +25,10 @@ public:
     // Set the state of the keypad
     void setKey(int key, int value);
 
+
+    //clear all keys
+    void clearKeys();
+
     bool drawFlag = false;
 
     void drawGraphics();

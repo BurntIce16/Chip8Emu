@@ -42,3 +42,16 @@ This project was made possible thanks to:
 - https://multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/
 - https://en.wikipedia.org/wiki/CHIP-8#Opcode_table
 - https://github.com/corax89/chip8-test-rom
+- https://github.com/Timendus/chip8-test-suite
+
+
+## Test Suites Passed:
+
+- [X] CHIP-8 splash screen
+- [X] IBM logo
+- [X] Corax+ opcode test
+- [ ] Flags test
+- [ ] Quirks test
+- [ ] Keypad test
+- [ ] Beep test
+- [ ] Scrolling test
