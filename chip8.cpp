@@ -43,7 +43,14 @@ void Chip8::initialize()
 
     // DEBUG WINDOW SETUP
 
-    // Initialize SDL_ttf
+    // Initialize SDL first
+    if (SDL_Init(SDL_INIT_VIDEO) != 0)
+    {
+        std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
+        exit(1);
+    }
+
+    // Then initialize TTF
     if (TTF_Init() != 0)
     {
         std::cerr << "TTF_Init Error: " << TTF_GetError() << std::endl;
@@ -61,19 +68,10 @@ void Chip8::initialize()
         exit(1);
     }
 
-    // create the debug window
+    // Now create both windows after SDL is initialized
     initializeDebugWindow();
 
-    // create the window for graphics using sdl, this will be used by the drawGraphics function
-
-    // Initialize SDL
-    if (SDL_Init(SDL_INIT_VIDEO) != 0)
-    {
-        std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
-        exit(1);
-    }
-
-    // Create a window
+    // Create main window for graphics
     window = SDL_CreateWindow("CHIP-8 Emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 320, SDL_WINDOW_SHOWN);
     if (window == nullptr)
     {
@@ -105,7 +103,7 @@ void Chip8::initialize()
 void Chip8::initializeDebugWindow()
 {
     // Create a window for debugging
-    debugWindow = SDL_CreateWindow("CHIP-8 Debugger", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, SDL_WINDOW_SHOWN);
+    debugWindow = SDL_CreateWindow("CHIP-8 Debugger", SDL_WINDOWPOS_CENTERED + 320, SDL_WINDOWPOS_CENTERED, 800, 600, SDL_WINDOW_SHOWN);
     if (debugWindow == nullptr)
     {
         std::cerr << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
@@ -708,6 +706,8 @@ void Chip8::cleanUp()
     SDL_DestroyWindow(window);
     SDL_DestroyRenderer(debugRenderer);
     SDL_DestroyWindow(debugWindow);
+    TTF_CloseFont(font);
+    TTF_Quit();
     SDL_Quit();
 }
 
