@@ -75,6 +75,10 @@ private:
 
     unsigned char key[16]; // hex keypad with 16 keys, each key is either pressed or not pressed (1 or 0)
 
+    enum keymap[16]; // arrat of all mapped keys, follows the 4x4 grid pattern elsewhere for input handeling
+
+
+
     unsigned char chip8_fontset[80] =
         {
             0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -109,6 +113,10 @@ private:
 
 
     long bufferSize = 0;
+
+
+    
+
 };
 
 #endif // CHIP8_H

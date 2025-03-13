@@ -459,6 +459,7 @@ void Chip8::emulateCycle()
             uint8_t x = (opcode & 0x0F00) >> 8;
             bool keyPressDetected = false;
 
+            //Get the first (numerical) key pressed
             for (uint8_t i = 0; i < 16; ++i)
             {
                 if (key[i] != 0)
@@ -474,7 +475,7 @@ void Chip8::emulateCycle()
                 return; // Don't increment pc, wait for key press
             }
 
-            pc += 2;
+            pc += 2; // key press has been detected, increment program counter
             break;
         }
         case 0x0015: // FX15: Set the delay timer to VX
@@ -621,8 +622,7 @@ void Chip8::handleEvents(bool &running, bool &restart)
         }
         else if (event.type == SDL_KEYDOWN)
         {
-
-            // This is beyond cursed and needs a better solution
+            // TODO This is beyond cursed and needs a better solution
             if (event.key.keysym.sym == SDLK_ESCAPE)
             {
                 restart = true;
@@ -630,6 +630,9 @@ void Chip8::handleEvents(bool &running, bool &restart)
                 //clear any textures
                 std::cout << "Restart" << std::endl;
             }
+
+            // This is so fucked, im gonna implement a new system using an array of enums (SDLK_...) and itterate using a for loop
+            // Why the *fuck* did I every write it like this
             else if (event.key.keysym.sym == SDLK_1)
             {
                 setKey(0, 1);
