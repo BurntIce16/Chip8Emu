@@ -5,6 +5,7 @@
 #include <cstring>
 #include <fstream>
 #include <ctime>
+#include <sstream>
 
 Chip8::Chip8()
 {
@@ -179,8 +180,10 @@ void Chip8::emulateCycle()
 
     if (loggingEnabled)
     {
-        std::string logMessage = "\"Opcode\": \"0x" + std::to_string(opcode) + "\", \"PC\": \"0x" + std::to_string(pc) + "\"";
-        logger.writeLog(logMessage.c_str());
+        std::ostringstream logStream;
+        logStream << "\"Opcode\": \"0x" << std::hex << std::uppercase << opcode 
+                  << "\", \"PC\": \"0x" << std::hex << std::uppercase << pc << "\"";
+        logger.writeLog(logStream.str().c_str());
     }
 
     // Decode & Execute Opcode
@@ -718,88 +721,65 @@ void Chip8::cleanUp()
 
 void Chip8::renderDebugInfo()
 {
-    static bool staticContentRendered = false;
-    static SDL_Texture *staticContentTexture = nullptr;
-
-    // If static content is not rendered yet, render it to a texture
-    if (!staticContentRendered)
-    {
-        staticContentTexture = SDL_CreateTexture(debugRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 800, 600);
-        SDL_SetRenderTarget(debugRenderer, staticContentTexture);
-
-        // Clear the texture
-        SDL_SetRenderDrawColor(debugRenderer, 0, 0, 0, 255); // Black
-        SDL_RenderClear(debugRenderer);
-
-        SDL_Color white = {255, 255, 255, 255}; // White color for normal text
-
-        // Display the registers
-        for (int i = 0; i < 16; ++i)
-        {
-            char buffer[16];
-            snprintf(buffer, sizeof(buffer), "V[%X]: %02X", i, V[i]);
-            renderText(debugRenderer, 10, 20 * i, buffer, white);
-        }
-
-        // Display other registers and state information
-        char buffer[32];
-        snprintf(buffer, sizeof(buffer), "I: %04X", I);
-        renderText(debugRenderer, 10, 20 * 16, buffer, white);
-
-        snprintf(buffer, sizeof(buffer), "PC: %04X", pc);
-        renderText(debugRenderer, 10, 20 * 17, buffer, white);
-
-        snprintf(buffer, sizeof(buffer), "SP: %02X", sp);
-        renderText(debugRenderer, 10, 20 * 18, buffer, white);
-
-        snprintf(buffer, sizeof(buffer), "Delay Timer: %02X", delay_timer);
-        renderText(debugRenderer, 10, 20 * 19, buffer, white);
-
-        snprintf(buffer, sizeof(buffer), "Sound Timer: %02X", sound_timer);
-        renderText(debugRenderer, 10, 20 * 20, buffer, white);
-
-        // Display loaded instructions in memory
-        int x = 200;
-        int y = 10;
-        const int padding = 10;
-        const int windowWidth = 800; // Assuming debug window width is 800
-
-        for (int i = 0x200; i < (0x200 + Chip8::bufferSize); i += 2)
-        {
-            uint16_t address = i;
-            char buffer[32];
-            snprintf(buffer, sizeof(buffer), "%04X: %02X%02X", address, memory[address], memory[address + 1]);
-
-            renderText(debugRenderer, x, y, buffer, white);
-
-            int textWidth;
-            TTF_SizeText(font, buffer, &textWidth, nullptr);
-
-            x += textWidth + padding;
-            if (x + textWidth > windowWidth - padding)
-            {
-                x = 200; // Reset x position
-                y += 20; // Move to next line
-            }
-        }
-
-        // Reset the render target to the default
-        SDL_SetRenderTarget(debugRenderer, nullptr);
-        staticContentRendered = true;
-    }
-
     // Clear the debug window
     SDL_SetRenderDrawColor(debugRenderer, 0, 0, 0, 255); // Black
     SDL_RenderClear(debugRenderer);
 
-    // Render the static content texture
-    SDL_RenderCopy(debugRenderer, staticContentTexture, nullptr, nullptr);
+    SDL_Color white = {255, 255, 255, 255}; // White color for normal text
 
-    // Highlight the current instruction
+    // Display the registers
+    for (int i = 0; i < 16; ++i)
+    {
+        char buffer[16];
+        snprintf(buffer, sizeof(buffer), "V[%X]: %02X", i, V[i]);
+        renderText(debugRenderer, 10, 20 * i, buffer, white);
+    }
+
+    // Display other registers and state information
+    char buffer[32];
+    snprintf(buffer, sizeof(buffer), "I: %04X", I);
+    renderText(debugRenderer, 10, 20 * 16, buffer, white);
+
+    snprintf(buffer, sizeof(buffer), "PC: %04X", pc);
+    renderText(debugRenderer, 10, 20 * 17, buffer, white);
+
+    snprintf(buffer, sizeof(buffer), "SP: %02X", sp);
+    renderText(debugRenderer, 10, 20 * 18, buffer, white);
+
+    snprintf(buffer, sizeof(buffer), "Delay Timer: %02X", delay_timer);
+    renderText(debugRenderer, 10, 20 * 19, buffer, white);
+
+    snprintf(buffer, sizeof(buffer), "Sound Timer: %02X", sound_timer);
+    renderText(debugRenderer, 10, 20 * 20, buffer, white);
+
+    // Display loaded instructions in memory
     int x = 200;
     int y = 10;
     const int padding = 10;
     const int windowWidth = 800; // Assuming debug window width is 800
+
+    for (int i = 0x200; i < (0x200 + Chip8::bufferSize); i += 2)
+    {
+        uint16_t address = i;
+        char buffer[32];
+        snprintf(buffer, sizeof(buffer), "%04X: %02X%02X", address, memory[address], memory[address + 1]);
+
+        renderText(debugRenderer, x, y, buffer, white);
+
+        int textWidth;
+        TTF_SizeText(font, buffer, &textWidth, nullptr);
+
+        x += textWidth + padding;
+        if (x + textWidth > windowWidth - padding)
+        {
+            x = 200; // Reset x position
+            y += 20; // Move to next line
+        }
+    }
+
+    // Highlight the current instruction
+    x = 200;
+    y = 10;
 
     for (int i = 0x200; i < (0x200 + Chip8::bufferSize); i += 2)
     {
