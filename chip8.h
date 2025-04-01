@@ -4,6 +4,8 @@
 #include <SDL2/SDL.h>
 #include <SDL_ttf.h>
 #include <fstream>
+#include "logger.h"
+#include <string>
 
 class Chip8
 {
@@ -75,8 +77,6 @@ private:
 
     unsigned char key[16]; // hex keypad with 16 keys, each key is either pressed or not pressed (1 or 0)
 
-    enum keymap[16]; // arrat of all mapped keys, follows the 4x4 grid pattern elsewhere for input handeling
-
 
 
     unsigned char chip8_fontset[80] =
@@ -108,13 +108,13 @@ private:
     TTF_Font *font; // Font for rendering text
 
     //log file for debugging (ofstream)
-    std::ofstream logFile;
+    //std::ofstream logFile;
     bool loggingEnabled = false;
 
 
     long bufferSize = 0;
 
-
+    Logger logger = Logger("log.jsonl");
     
 
 };

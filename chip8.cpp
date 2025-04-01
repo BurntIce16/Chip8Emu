@@ -1,7 +1,6 @@
 #include "chip8.h"
 #include <iostream>
 #include <cstdio>
-#include <iostream>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -9,7 +8,12 @@
 
 Chip8::Chip8()
 {
-    // std::cout<<"test123"<<std::endl;
+    enableLogging();
+
+    if (loggingEnabled)
+    {
+        Logger logger = Logger("log.jsonl");
+    }
 }
 
 void Chip8::initialize()
@@ -90,14 +94,7 @@ void Chip8::initialize()
         exit(1);
     }
 
-    enableLogging();
-
-    if (loggingEnabled)
-    {
-        std::string filename = "log.txt";
-        // open the file
-        logFile.open(filename);
-    }
+    
 }
 
 void Chip8::initializeDebugWindow()
@@ -174,14 +171,16 @@ bool Chip8::loadGame(const char *filename)
 // Emulate one cycle of the system
 void Chip8::emulateCycle()
 {
+
     // Fetch Opcode
-    opcode = memory[pc] << 8 | memory[pc + 1]; // value of first memory address, shifted 8 to the left and concatinated with the seccond value
+    opcode = memory[pc] << 8 | memory[pc + 1]; // value of first memory address, shifted 8 to the left and concatenated with the seccond value
 
     printf("Executing opcode: 0x%X at PC: %X\n", opcode, pc);
 
     if (loggingEnabled)
     {
-        logFile << "Executing opcode: 0x" << std::hex << opcode << " at PC: 0x" << pc << std::endl;
+        std::string logMessage = "\"Opcode\": \"0x" + std::to_string(opcode) + "\", \"PC\": \"0x" + std::to_string(pc) + "\"";
+        logger.writeLog(logMessage.c_str());
     }
 
     // Decode & Execute Opcode
@@ -617,7 +616,7 @@ void Chip8::handleEvents(bool &running, bool &restart)
             std::cout << "Quit" << std::endl;
             if (loggingEnabled)
             {
-                logFile.close();
+                //logFile.close();
             }
         }
         else if (event.type == SDL_KEYDOWN)
@@ -633,6 +632,9 @@ void Chip8::handleEvents(bool &running, bool &restart)
 
             // This is so fucked, im gonna implement a new system using an array of enums (SDLK_...) and itterate using a for loop
             // Why the *fuck* did I every write it like this
+            
+
+
             else if (event.key.keysym.sym == SDLK_1)
             {
                 setKey(0, 1);
