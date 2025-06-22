@@ -84,7 +84,8 @@
         "semaphore": "cpp",
         "span": "cpp",
         "cinttypes": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "bitset": "cpp"
     },
     "cSpell.words": [
         "xcount",
