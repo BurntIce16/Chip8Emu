@@ -6,6 +6,8 @@
 #include <fstream>
 #include "logger.h"
 #include <string>
+#include <vector>
+#include <utility>
 
 class Chip8
 {
@@ -101,11 +103,19 @@ private:
 
     SDL_Window *window;
     SDL_Renderer *renderer;
-    SDL_Texture *texture;
+    SDL_Texture* gfxTexture = nullptr;
 
     SDL_Window *debugWindow;
     SDL_Renderer *debugRenderer;
     TTF_Font *font; // Font for rendering text
+
+
+    // Textures for registers
+    std::string lastRegisterText[16];
+    SDL_Texture* registerTextures[16] = {nullptr};
+
+    std::vector<std::string> lastMemText;
+    std::vector<SDL_Texture*> memTextures;
 
     //log file for debugging (ofstream)
     //std::ofstream logFile;
