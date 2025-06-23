@@ -8,12 +8,13 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include "chip8gfx.h"
+
+class Chip8GFX; // Forward declaration of Chip8GFX class
 
 class Chip8
 {
 public:
-    // Public member functions
-
     // Constructor
     Chip8();
 
@@ -35,22 +36,34 @@ public:
 
     bool drawFlag = false;
 
-    void drawGraphics();
-
     void handleEvents(bool &running, bool &restart);
-
-    void cleanUp();
-
-    // Debugging functions
-    void initializeDebugWindow();
-    void renderDebugInfo();
-    void renderText(SDL_Renderer *renderer, int x, int y, const char *text, SDL_Color color);
 
     void enableLogging();
 
+    void setGFX(Chip8GFX* gfxPtr); // Add this setter
+
+    unsigned char* getDisplayBuffer() { return gfx; }
+
+
+
+
+    // --- Getters for private members ---
+    unsigned char* getV() { return V; }
+    unsigned short getI() { return I; }
+    unsigned short getPC() { return pc; }
+    unsigned char getDelayTimer() { return delay_timer; }
+    unsigned char getSoundTimer() { return sound_timer; }
+    unsigned char* getMemory() { return memory; }
+    unsigned long getBufferSize() { return bufferSize; }
+    unsigned short getSP() { return sp; }
+
+
+
 private:
-    // Private member variables
+    // -- system state variables --
     unsigned short opcode; // current opcode, two bytes long
+
+    unsigned char gfx[64 * 32]; // 64x32 pixel monochrome display, each pixel is either on(1) or off(0)
 
     unsigned char memory[4096]; // 4KB memory
 
@@ -69,8 +82,6 @@ private:
     0x200-0xFFF - Program ROM and work RAM
     */
 
-    unsigned char gfx[64 * 32]; // 64x32 pixel monochrome display, each pixel is either on(1) or off(0)
-
     unsigned char delay_timer; // timer that counts at 60Hz, when set above 0, it will count down to 0
     unsigned char sound_timer; // timer that counts at 60Hz, when set above 0, it will count down to 0 and beep
 
@@ -79,8 +90,12 @@ private:
 
     unsigned char key[16]; // hex keypad with 16 keys, each key is either pressed or not pressed (1 or 0)
 
+    long bufferSize = 0;
 
 
+    // -- constants and fontset --
+
+    // Fontset for the Chip-8 system, 80 bytes long
     unsigned char chip8_fontset[80] =
         {
             0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -101,32 +116,19 @@ private:
             0xF0, 0x80, 0xF0, 0x80, 0x80  // F
     };
 
-    SDL_Window *window;
-    SDL_Renderer *renderer;
-    SDL_Texture* gfxTexture = nullptr;
-
-    SDL_Window *debugWindow;
-    SDL_Renderer *debugRenderer;
-    TTF_Font *font; // Font for rendering text
 
 
-    // Textures for registers
-    std::string lastRegisterText[16];
-    SDL_Texture* registerTextures[16] = {nullptr};
+    // -- logging --
 
-    std::vector<std::string> lastMemText;
-    std::vector<SDL_Texture*> memTextures;
-
-    //log file for debugging (ofstream)
-    //std::ofstream logFile;
     bool loggingEnabled = false;
-
-
-    long bufferSize = 0;
-
     Logger logger = Logger("log.jsonl");
-    
 
+
+    // -- graphics --
+
+    // Pointer to Chip8GFX for graphics operations
+    Chip8GFX* gfxPtr = nullptr;
+    
 };
 
 #endif // CHIP8_H
