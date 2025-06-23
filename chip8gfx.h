@@ -6,7 +6,9 @@
 #include <string>
 #include <vector>
 #include <utility>
-#include "chip8.h"
+
+
+class Chip8; // Forward declaration of Chip8 class
 
 class Chip8GFX
 {
@@ -48,7 +50,7 @@ private:
     std::vector<std::string> lastMemText;
     std::vector<SDL_Texture*> memTextures;
 
-    unsigned char* display = chip8->getDisplayBuffer();
+    unsigned char* display;
 
 };
 

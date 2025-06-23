@@ -3,9 +3,16 @@
 #include <iostream>
 
 Chip8GFX::Chip8GFX(Chip8* chip8Ptr) : chip8(chip8Ptr) {
+
+    // Initialize display buffer
+    display = chip8->getDisplayBuffer();
+    if (display == nullptr) {
+        std::cerr << "Error: Display buffer is null!" << std::endl;
+        exit(1);
+    }
     
     // clear display
-    memset(display, 0, sizeof(display));
+    memset(display, 0, 64 * 32 * sizeof(unsigned char));
 
     // --- DEBUG WINDOW SETUP ---
 
