@@ -1,10 +1,14 @@
 #include <SDL2/SDL.h>
 #include <iostream>
 #include "chip8.h"
+#include "chip8gfx.h"
 #include <chrono>
 #include <thread>
 
 Chip8 chip8;
+Chip8GFX gfx(&chip8);
+
+
 
 void runAtFrequency(unsigned int hz)
 {
@@ -18,7 +22,7 @@ void runAtFrequency(unsigned int hz)
     // if draw flag is set update the screen:
     if (chip8.drawFlag)
     {
-        chip8.drawGraphics();
+        gfx.drawGraphics();
         chip8.drawFlag = false;
     }
 
@@ -44,6 +48,9 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    chip8.setGFX(&gfx);
+
+
     unsigned int frequency = 60; // 60 Hz is default, may change for testing
 
     while (true)
@@ -65,7 +72,7 @@ int main(int argc, char *argv[])
             runAtFrequency(frequency);
         }
 
-        chip8.cleanUp();
+        gfx.cleanUp();
 
         if (!restart)
         {
