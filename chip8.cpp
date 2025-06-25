@@ -214,34 +214,41 @@ void Chip8::emulateCycle()
             break;
         case 0x0004: // 8XY4: Add VY to VX, set VF to 1 if there's a carry, otherwise 0
         {
-            uint8_t x = (opcode & 0x0F00) >> 8; // Extract the X register index
-            uint8_t y = (opcode & 0x00F0) >> 4; // Extract the Y register index
+            uint8_t x = (opcode & 0x0F00) >> 8;
+            uint8_t y = (opcode & 0x00F0) >> 4;
+
+            bool carry = false;
 
             if (V[y] > (0xFF - V[x]))
             {               // Check for overflow
-                V[0xF] = 1; // Set carry flag to 1
+                carry = true; // There is a carry
             }
             else
             {
-                V[0xF] = 0; // Set carry flag to 0
+                carry = false; // There is no carry
             }
-            V[x] += V[y]; // Add VY to VX
-            pc += 2;      // Increment the program counter by 2
+            V[x] += V[y]; // Add VY to VX   
+            V[0xF] = carry ? 1 : 0; // Set the carry flag
+            pc += 2;
             break;
         }
         case 0x0005: // 8XY5: Vx = Vx - Vy, set VF to 0 if there's a borrow, 1 if there isn't
         {
             uint8_t x = (opcode & 0x0F00) >> 8;
             uint8_t y = (opcode & 0x00F0) >> 4;
-            if (V[x] > V[y])
+
+            bool borrow = false;
+
+            if (V[x] >= V[y])
             {
-                V[0xF] = 1; // There is no borrow
+                borrow = true; // There is no borrow
             }
             else
             {
-                V[0xF] = 0; // There is a borrow
+                borrow = false; // There is a borrow
             }
             V[x] -= V[y];
+            V[0xF] = borrow ? 1 : 0; // Set the carry flag based on the borrow
             pc += 2;
             break;
         }
@@ -257,15 +264,19 @@ void Chip8::emulateCycle()
         {
             uint8_t x = (opcode & 0x0F00) >> 8;
             uint8_t y = (opcode & 0x00F0) >> 4;
-            if (V[y] > V[x])
+
+            bool borrow = false;
+
+            if (V[y] >= V[x])
             {
-                V[0xF] = 1; // There is no borrow
+                borrow = true; // There is no borrow
             }
             else
             {
-                V[0xF] = 0; // There is a borrow
+                borrow = false; // There is a borrow
             }
             V[x] = V[y] - V[x];
+            V[0xF] = borrow ? 1 : 0; // Set the carry flag based on the borrow
             pc += 2;
             break;
         }
