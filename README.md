@@ -50,21 +50,19 @@ This project was made possible thanks to:
 - [X] CHIP-8 splash screen
 - [X] IBM logo
 - [X] Corax+ opcode test
-- [ ] Flags test
+- [X] Flags test
 - [ ] Quirks test
-- [ ] Keypad test
+- [X] Keypad test
 - [ ] Beep test
 - [ ] Scrolling test
 
 
 ## Project To-Do
 
-- [ ] Improved logging
+- [x] Improved logging
 - [ ] Launcher Interface
-- [ ] Handle inputs properly (allow remapping?)
+- [x] Handle inputs properly
 - [ ] Clean restart
-- [ ] Isolate code more, its to interconnected
-- [ ] Optimize SDL2 usage & optimize array logic, its super fucking slow right now
-- [ ] Set up unit tests for profiling (maybe add my own opcode that triggers a callback of somekind or add breakpoints to my debugger?)
+- [ ] Optimize SDL2 usage
 - [ ] Make the debugger interractive
 - [ ] Color / sound themes
