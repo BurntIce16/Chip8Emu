@@ -264,15 +264,19 @@ void Chip8::emulateCycle()
         {
             uint8_t x = (opcode & 0x0F00) >> 8;
             uint8_t y = (opcode & 0x00F0) >> 4;
-            if (V[y] > V[x])
+
+            bool borrow = false;
+
+            if (V[y] >= V[x])
             {
-                V[0xF] = 1; // There is no borrow
+                borrow = true; // There is no borrow
             }
             else
             {
-                V[0xF] = 0; // There is a borrow
+                borrow = false; // There is a borrow
             }
             V[x] = V[y] - V[x];
+            V[0xF] = borrow ? 1 : 0; // Set the carry flag based on the borrow
             pc += 2;
             break;
         }
