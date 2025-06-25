@@ -1,36 +1,39 @@
 #include <SDL2/SDL.h>
 #include <iostream>
-#include "chip8.h"
-#include "chip8gfx.h"
 #include <chrono>
 #include <thread>
 
-Chip8 chip8;
+#include "chip8.h"
+#include "chip8gfx.h"
+
+Chip8    chip8;
 Chip8GFX gfx(&chip8);
 
-
-
-void runAtFrequency(unsigned int hz)
+void runAtFrequency(unsigned int hz, bool &running, bool &restart)
 {
     using namespace std::chrono;
-    static auto interval = duration<double>(1.0 / hz);
+    static const duration<double> interval{1.0 / hz};
     static auto next = steady_clock::now() + interval;
 
-    // Emulator Logic
+    // 1) Poll and handle SDL events
+    chip8.handleEvents(running, restart);
+    if (!running) return;
+
+    // 2) Emulate one CPU cycle
     chip8.emulateCycle();
 
-    // if draw flag is set update the screen:
+    // 3) Draw to screen if requested
     if (chip8.drawFlag)
     {
         gfx.drawGraphics();
         chip8.drawFlag = false;
     }
 
-    // Clock logic
+    // 4) Wait until next tick
     auto now = steady_clock::now();
     if (now > next)
     {
-        std::cerr << "Warning: Overrun detected!" << std::endl;
+        std::cerr << "Warning: Overrun detected!\n";
         next = now + interval;
     }
     else
@@ -40,25 +43,24 @@ void runAtFrequency(unsigned int hz)
     }
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     if (argc != 2)
     {
-        std::cout << "Correct use is ./chip8 <gamePath>" << std::endl;
+        std::cout << "Usage: ./chip8 <gamePath>\n";
         return 0;
     }
 
     chip8.setGFX(&gfx);
-
-
-    unsigned int frequency = 60; // 60 Hz is default, may change for testing
+    constexpr unsigned int FPS = 500;
 
     while (true)
     {
         chip8.initialize();
+
         if (!chip8.loadGame(argv[1]))
         {
-            std::cerr << "Failed to load game!" << std::endl;
+            std::cerr << "Failed to load game!\n";
             return 1;
         }
 
@@ -67,17 +69,13 @@ int main(int argc, char *argv[])
 
         while (running)
         {
-            chip8.clearKeys();
-            chip8.handleEvents(running, restart);
-            runAtFrequency(frequency);
+            runAtFrequency(FPS, running, restart);
         }
 
         gfx.cleanUp();
 
         if (!restart)
-        {
-            break; // Exit the loop if not restarting
-        }
+            break;
     }
 
     return 0;
