@@ -298,9 +298,10 @@ void Chip8GFX::renderText(SDL_Renderer *renderer, int x, int y, const char *text
 
 void Chip8GFX::clearDisplay() {
     // Clear the graphics buffer
-    memset(display, 0, sizeof(display));
+    memset(display, 0, 64 * 32 * sizeof(unsigned char));
     
     // Clear the renderer
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Black
     SDL_RenderClear(renderer);
+    SDL_RenderPresent(renderer); // Present the cleared renderer
 }

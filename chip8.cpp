@@ -7,6 +7,7 @@
 #include <fstream>
 #include <ctime>
 #include <sstream>
+#include <unordered_map>
 
 
 
@@ -105,7 +106,7 @@ void Chip8::emulateCycle()
     // Fetch Opcode
     opcode = memory[pc] << 8 | memory[pc + 1]; // value of first memory address, shifted 8 to the left and concatenated with the seccond value
 
-    printf("Executing opcode: 0x%X at PC: %X\n", opcode, pc);
+    //printf("Executing opcode: 0x%X at PC: %X\n", opcode, pc);
 
 /*     if (loggingEnabled)
     {
@@ -508,112 +509,68 @@ void Chip8::emulateCycle()
 void Chip8::setKey(int key, int value)
 {
     Chip8::key[key] = value;
+    if (loggingEnabled)
+    {
+        std::ostringstream logStream;
+        logStream << "\"Key\": \"" << key << "\", \"Value\": \"" << value << "\"";
+        logger.writeLog(logStream.str().c_str());
+    }
 }
 
 void Chip8::clearKeys()
 {
-    memset(key, 0, sizeof(key));
+    memset(key, 0, sizeof(key)); 
 }
 
 
 void Chip8::handleEvents(bool &running, bool &restart)
 {
+    static const std::unordered_map<SDL_Keycode, uint8_t> keymap = {
+        { SDLK_1, 0x1 }, { SDLK_2, 0x2 }, { SDLK_3, 0x3 }, { SDLK_4, 0xC },
+        { SDLK_q, 0x4 }, { SDLK_w, 0x5 }, { SDLK_e, 0x6 }, { SDLK_r, 0xD },
+        { SDLK_a, 0x7 }, { SDLK_s, 0x8 }, { SDLK_d, 0x9 }, { SDLK_f, 0xE },
+        { SDLK_z, 0xA }, { SDLK_x, 0x0 }, { SDLK_c, 0xB }, { SDLK_v, 0xF },
+    };
+
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
-        if (event.type == SDL_QUIT)
+        switch (event.type)
         {
-            running = false;
-            std::cout << "Quit" << std::endl;
-            if (loggingEnabled)
-            {
-                //logFile.close();
-            }
-        }
-        else if (event.type == SDL_KEYDOWN)
-        {
-            // TODO This is beyond cursed and needs a better solution
-            if (event.key.keysym.sym == SDLK_ESCAPE)
-            {
-                restart = true;
+            case SDL_QUIT:
                 running = false;
-                //clear any textures
-                std::cout << "Restart" << std::endl;
+                break;
+
+            case SDL_KEYDOWN:
+            case SDL_KEYUP:
+            {
+                const bool pressed = (event.type == SDL_KEYDOWN);
+
+                // global keys
+                if (event.key.keysym.sym == SDLK_ESCAPE)
+                {
+                    if (pressed)  // only on press
+                    {
+                        restart = true;
+                        running = false;
+                    }
+                    break;
+                }
+
+                // chip8 keys
+                auto it = keymap.find(event.key.keysym.sym);
+                if (it != keymap.end())
+                    setKey(it->second, pressed);
+
+                break;
             }
 
-            // This is so fucked, im gonna implement a new system using an array of enums (SDLK_...) and itterate using a for loop
-            // Why the *fuck* did I every write it like this
-            
-
-
-            else if (event.key.keysym.sym == SDLK_1)
-            {
-                setKey(0, 1);
-            }
-            else if (event.key.keysym.sym == SDLK_2)
-            {
-                setKey(1, 1);
-            }
-            else if (event.key.keysym.sym == SDLK_3)
-            {
-                setKey(2, 1);
-            }
-            else if (event.key.keysym.sym == SDLK_4)
-            {
-                setKey(3, 1);
-            }
-            else if (event.key.keysym.sym == SDLK_q)
-            {
-                setKey(4, 1);
-            }
-            else if (event.key.keysym.sym == SDLK_w)
-            {
-                setKey(5, 1);
-            }
-            else if (event.key.keysym.sym == SDLK_e)
-            {
-                setKey(6, 1);
-            }
-            else if (event.key.keysym.sym == SDLK_r)
-            {
-                setKey(7, 1);
-            }
-            else if (event.key.keysym.sym == SDLK_a)
-            {
-                setKey(8, 1);
-            }
-            else if (event.key.keysym.sym == SDLK_s)
-            {
-                setKey(9, 1);
-            }
-            else if (event.key.keysym.sym == SDLK_d)
-            {
-                setKey(10, 1);
-            }
-            else if (event.key.keysym.sym == SDLK_f)
-            {
-                setKey(11, 1);
-            }
-            else if (event.key.keysym.sym == SDLK_z)
-            {
-                setKey(12, 1);
-            }
-            else if (event.key.keysym.sym == SDLK_x)
-            {
-                setKey(13, 1);
-            }
-            else if (event.key.keysym.sym == SDLK_c)
-            {
-                setKey(14, 1);
-            }
-            else if (event.key.keysym.sym == SDLK_v)
-            {
-                setKey(15, 1);
-            }
+            default:
+                break;
         }
-        // Add more event handling here if needed, e.g., keypresses
     }
 }
+
 
 void Chip8::enableLogging()
 {
