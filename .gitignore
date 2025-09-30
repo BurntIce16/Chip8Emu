@@ -1,9 +1,19 @@
+#dev files
 log.jsonl
 testcodes/
 ref/
 build/
 .vscode/
+
+#Compiled Binaries (in case of make mistake)
 *.o
 *.exe
 *.out
 *.bin
+
+
+
+#Chip-8 programs
+*.ch8
+*.8o
+programs/
