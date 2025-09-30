@@ -2,3 +2,8 @@ log.jsonl
 testcodes/
 ref/
 build/
+.vscode/
+*.o
+*.exe
+*.out
+*.bin
