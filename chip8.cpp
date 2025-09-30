@@ -500,9 +500,6 @@ void Chip8::emulateCycle()
         }
         --sound_timer;
     }
-
-    // update debug window
-    gfxPtr->renderDebugInfo();
 }
 
 // Set the state of the keypad
@@ -520,6 +517,13 @@ void Chip8::setKey(int key, int value)
 void Chip8::clearKeys()
 {
     memset(key, 0, sizeof(key)); 
+}
+
+
+
+void Chip8::tickTimers(){
+    if (delay_timer > 0) --delay_timer;
+    if (sound_timer > 0) --sound_timer;
 }
 
 

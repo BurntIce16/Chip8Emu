@@ -120,6 +120,9 @@ void Chip8GFX::drawGraphics()
 
     // Present the renderer
     SDL_RenderPresent(renderer);
+
+    // update debug window
+    renderDebugInfo();
 }
 
 void Chip8GFX::cleanUp()
@@ -204,7 +207,7 @@ void Chip8GFX::renderDebugInfo() {
     const int padding = 10;
     const int windowWidth = 800;
 
-    for (int i = 0, addr = 0x200; addr < (0x200 + chip8->getBufferSize()); i++, addr += 2)
+    for (int i = 0, addr = 0x200; static_cast<size_t>(addr) < (0x200 + chip8->getBufferSize()); i++, addr += 2)
     {
         char buffer[32];
         snprintf(buffer, sizeof(buffer), "%04X: %02X%02X", addr, memory[addr], memory[addr + 1]);
@@ -234,7 +237,7 @@ void Chip8GFX::renderDebugInfo() {
     // --- Highlight the current instruction ---
     x = 200;
     y = 10;
-    for (int i = 0, addr = 0x200; addr < (0x200 + chip8->getBufferSize()); i++, addr += 2)
+    for (int i = 0, addr = 0x200; static_cast<size_t>(addr) < (0x200 + chip8->getBufferSize()); i++, addr += 2)
     {
         if (addr == pc)
         {
