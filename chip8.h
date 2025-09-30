@@ -34,6 +34,9 @@ public:
     //clear all keys
     void clearKeys();
 
+    // Update internal timers (sound/etc)
+    void tickTimers();
+
     bool drawFlag = false;
 
     void handleEvents(bool &running, bool &restart);

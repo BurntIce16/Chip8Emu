@@ -9,39 +9,16 @@
 Chip8    chip8;
 Chip8GFX gfx(&chip8);
 
-void runAtFrequency(unsigned int hz, bool &running, bool &restart)
-{
-    using namespace std::chrono;
-    static const duration<double> interval{1.0 / hz};
-    static auto next = steady_clock::now() + interval;
 
-    // 1) Poll and handle SDL events
-    chip8.handleEvents(running, restart);
-    if (!running) return;
+//Frequencies to run subsystems at
+static constexpr double CPU_HZ    = 700.0;  // ~500–1000 typical
+static constexpr double TIMER_HZ  = 60.0;
+static constexpr double FRAME_HZ  = 120.0;
 
-    // 2) Emulate one CPU cycle
-    chip8.emulateCycle();
-
-    // 3) Draw to screen if requested
-    if (chip8.drawFlag)
-    {
-        gfx.drawGraphics();
-        chip8.drawFlag = false;
-    }
-
-    // 4) Wait until next tick
-    auto now = steady_clock::now();
-    if (now > next)
-    {
-        std::cerr << "Warning: Overrun detected!\n";
-        next = now + interval;
-    }
-    else
-    {
-        std::this_thread::sleep_until(next);
-        next += interval;
-    }
-}
+//Time steps
+static constexpr double CPU_DT    = 1.0 / CPU_HZ;
+static constexpr double TIMER_DT  = 1.0 / TIMER_HZ;
+static constexpr double FRAME_DT  = 1.0 / FRAME_HZ;
 
 int main(int argc, char* argv[])
 {
@@ -52,7 +29,6 @@ int main(int argc, char* argv[])
     }
 
     chip8.setGFX(&gfx);
-    constexpr unsigned int FPS = 500;
 
     while (true)
     {
@@ -67,9 +43,52 @@ int main(int argc, char* argv[])
         bool running = true;
         bool restart = false;
 
+
+        using clock = std::chrono::steady_clock;
+        auto last = clock::now();
+        double cpuAcc   = 0.0;
+        double timerAcc = 0.0;
+        double frameAcc = 0.0;
+
         while (running)
         {
-            runAtFrequency(FPS, running, restart);
+            //Get time delta
+            auto now = clock::now();
+            double dt = std::chrono::duration<double>(now - last).count();
+            last = now;
+
+            //Accumulate time delta
+            cpuAcc   += dt;
+            timerAcc += dt;
+            frameAcc += dt;
+
+            // check events (updates keypad & may clear Fx0A wait)
+            chip8.handleEvents(running, restart);
+            if (!running) break;
+
+            // --- run CPU at fixed rate; emulateCycle should early-return if Fx0A waiting
+            while (cpuAcc >= CPU_DT) {
+                chip8.emulateCycle();
+                cpuAcc -= CPU_DT;
+            }
+
+           // timers driven by wall clock
+            while (timerAcc >= TIMER_DT) {
+                chip8.tickTimers(); // decrement delay/sound timers here
+                timerAcc -= TIMER_DT;
+            }
+
+            //render ~60 FPS
+            if (frameAcc >= FRAME_DT) {
+                if (chip8.drawFlag) {
+                    gfx.drawGraphics();
+                    chip8.drawFlag = false;
+                }
+                frameAcc -= FRAME_DT;
+            }
+
+            //tiny yield
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
 
         gfx.cleanUp();
