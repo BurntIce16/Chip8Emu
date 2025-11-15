@@ -4,7 +4,7 @@ CXXFLAGS_RELEASE = -O3 -Wall -Wextra -std=c++11 -I/usr/include/SDL2 -DNDEBUG
 LDFLAGS = -lSDL2 -lSDL2_ttf
 
 TARGET = build/chip8
-SOURCES = main.cpp chip8.cpp chip8gfx.cpp logger.cpp
+SOURCES = main.cpp chip8.cpp chip8gfx.cpp logger.cpp chip8audio.cpp
 OBJECTS = $(addprefix build/,$(SOURCES:.cpp=.o))
 OBJECTS_RELEASE = $(addprefix build/release/,$(SOURCES:.cpp=.o))
 
@@ -29,6 +29,9 @@ build/%.o: %.cpp | build
 
 build/release/%.o: %.cpp | build/release
 	$(CXX) $(CXXFLAGS_RELEASE) -c $< -o $@
+
+build/chip8audio.o: chip8audio.cpp chip8audio.h
+	$(CXX) $(CXXFLAGS) -c chip8audio.cpp -o build/chip8audio.o
 
 clean:
 	rm -rf build

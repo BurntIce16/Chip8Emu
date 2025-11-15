@@ -56,7 +56,6 @@ This project was made possible thanks to:
 - [ ] Beep test
 - [ ] Scrolling test
 
-
 ## Project To-Do
 
 - [x] Improved logging

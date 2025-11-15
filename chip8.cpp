@@ -8,7 +8,7 @@
 #include <ctime>
 #include <sstream>
 #include <unordered_map>
-
+#include "chip8audio.h"
 
 
 Chip8::Chip8()
@@ -497,6 +497,8 @@ void Chip8::emulateCycle()
         if (sound_timer == 1)
         {
             printf("Beep!\n");
+            beep_set_on(true);
+            
         }
         --sound_timer;
     }

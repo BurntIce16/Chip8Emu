@@ -5,13 +5,14 @@
 
 #include "chip8.h"
 #include "chip8gfx.h"
+#include "chip8audio.h"
 
 Chip8    chip8;
 Chip8GFX gfx(&chip8);
 
 
 //Frequencies to run subsystems at
-static constexpr double CPU_HZ    = 700.0;  // ~500–1000 typical
+static constexpr double CPU_HZ    = 500.0;  // ~500–1000 typical
 static constexpr double TIMER_HZ  = 60.0;
 static constexpr double FRAME_HZ  = 120.0;
 
@@ -33,6 +34,7 @@ int main(int argc, char* argv[])
     while (true)
     {
         chip8.initialize();
+        beep_init();
 
         if (!chip8.loadGame(argv[1]))
         {
@@ -74,6 +76,7 @@ int main(int argc, char* argv[])
 
            // timers driven by wall clock
             while (timerAcc >= TIMER_DT) {
+                beep_set_on(false); //reset beeper
                 chip8.tickTimers(); // decrement delay/sound timers here
                 timerAcc -= TIMER_DT;
             }
